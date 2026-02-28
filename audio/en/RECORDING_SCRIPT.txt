@@ -1,0 +1,28 @@
+English Recording Scripts
+========================
+
+1. lesson1_intro.mp3
+--------------------
+Hello! In this lesson we will learn about the basic clock components. We will learn about numbers, hands, and the center.
+
+2. numbers.mp3
+--------------
+The clock has twelve numbers from one to twelve. These numbers help us tell the time.
+
+3. hour_hand.mp3
+----------------
+The hour hand is the short hand. It points to the current hour and moves slowly.
+
+4. minute_hand.mp3
+------------------
+The minute hand is the long hand. It points to the minutes and moves faster than the hour hand.
+
+5. center.mp3
+-------------
+The center is the point where all the hands meet. It's like the heart of the clock.
+
+Notes:
+- Speak clearly and slowly
+- Use a friendly and encouraging tone
+- Make sure there's no background noise
+- Each file should be between 5-15 seconds
