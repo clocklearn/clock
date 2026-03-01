@@ -254,83 +254,15 @@ paths:
   # ==========================================
   # AUTHENTICATION
   # ==========================================
-  /api/auth/register:
-    post:
-      tags:
-        - Authentication
-      summary: Register new user
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - username
-                - password
-              properties:
-                username:
-                  type: string
-                email:
-                  type: string
-                password:
-                  type: string
-                preferred_language:
-                  type: string
-                  enum: [ar, en]
-      responses:
-        '200':
-          description: Registration successful
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiResponse'
-
-  /api/auth/login:
-    post:
-      tags:
-        - Authentication
-      summary: Login user
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - username
-                - password
-              properties:
-                username:
-                  type: string
-                password:
-                  type: string
-      responses:
-        '200':
-          description: Login successful
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  data:
-                    type: object
-                    properties:
-                      token:
-                        type: string
-                      user:
-                        $ref: '#/components/schemas/User'
-
-  /api/auth/guest:
+  /auth/guest:
     post:
       tags:
         - Authentication
       summary: Create guest account
+      description: Create a temporary guest account without registration
       responses:
         '200':
-          description: Guest account created
+          description: Guest account created successfully
           content:
             application/json:
               schema:
@@ -343,8 +275,16 @@ paths:
                     properties:
                       token:
                         type: string
+                        description: JWT token for authentication
                       user:
-                        $ref: '#/components/schemas/User'
+                        type: object
+                        properties:
+                          id:
+                            type: integer
+                          display_name:
+                            type: string
+                          is_guest:
+                            type: boolean
 
   # ==========================================
   # UNITS
@@ -579,8 +519,7 @@ paths:
       tags:
         - Final Test
       summary: Get final test info
-      security:
-        - BearerAuth: []
+      description: Get information about the active final test (no authentication required)
       responses:
         '200':
           description: Final test details
@@ -594,26 +533,40 @@ paths:
                   data:
                     $ref: '#/components/schemas/FinalTest'
 
-  /api/final-test/start:
-    post:
+  /api/final-test/stages:
+    get:
       tags:
         - Final Test
-      summary: Start final test
+      summary: Get all test stages with unlock status
       security:
         - BearerAuth: []
       responses:
         '200':
-          description: Test started
+          description: List of stages with unlock status
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        stage:
+                          $ref: '#/components/schemas/TestStage'
+                        unlocked:
+                          type: boolean
+                        completed:
+                          type: boolean
 
-  /api/final-test/stages/{stageId}:
+  /api/final-test/stages/{stageId}/questions:
     get:
       tags:
         - Final Test
-      summary: Get stage details
+      summary: Get stage questions (without correct answers)
       security:
         - BearerAuth: []
       parameters:
@@ -624,7 +577,42 @@ paths:
             type: integer
       responses:
         '200':
-          description: Stage details with questions
+          description: Stage questions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        question_ar:
+                          type: string
+                        question_en:
+                          type: string
+                        question_type:
+                          type: string
+                        options_json:
+                          type: string
+                        points:
+                          type: integer
+
+  /api/final-test/progress:
+    get:
+      tags:
+        - Final Test
+      summary: Get user test progress
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: User progress in final test
           content:
             application/json:
               schema:
@@ -635,12 +623,16 @@ paths:
                   data:
                     type: object
                     properties:
-                      stage:
-                        $ref: '#/components/schemas/TestStage'
-                      questions:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/StageQuestion'
+                      current_stage_id:
+                        type: integer
+                      stages_completed:
+                        type: integer
+                      total_stages:
+                        type: integer
+                      test_completed:
+                        type: boolean
+                      overall_score:
+                        type: integer
 
   /api/final-test/stages/{stageId}/submit:
     post:
@@ -703,42 +695,13 @@ paths:
                       certificate_earned:
                         type: boolean
 
-  # ==========================================
-  # CERTIFICATES
-  # ==========================================
-  /api/certificates:
+  /api/final-test/certificate:
     get:
       tags:
         - Certificates
-      summary: Get user certificates
+      summary: Get user's final test certificate
       security:
         - BearerAuth: []
-      responses:
-        '200':
-          description: List of certificates
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Certificate'
-
-  /api/certificates/{code}:
-    get:
-      tags:
-        - Certificates
-      summary: Verify certificate by code
-      parameters:
-        - name: code
-          in: path
-          required: true
-          schema:
-            type: string
       responses:
         '200':
           description: Certificate details
@@ -751,6 +714,12 @@ paths:
                     type: boolean
                   data:
                     $ref: '#/components/schemas/Certificate'
+        '404':
+          description: Certificate not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
 
   # ==========================================
   # AUDIO FILES
