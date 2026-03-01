@@ -1,0 +1,783 @@
+openapi: 3.0.3
+info:
+  title: Clock Learning API
+  description: |
+    API for Clock Learning educational application.
+    
+    ## Features
+    - User authentication (JWT-based)
+    - Educational units, lessons, and exercises
+    - Final test system with multiple stages
+    - Progress tracking
+    - Certificate generation
+    
+    ## Authentication
+    Most endpoints require JWT authentication. Include the token in the Authorization header:
+    ```
+    Authorization: Bearer <your-jwt-token>
+    ```
+  version: 2.0.0
+  contact:
+    name: Clock Learning
+    url: https://clock-learning-api.clocklearn-online.workers.dev
+
+servers:
+  - url: https://clock-learning-api.clocklearn-online.workers.dev
+    description: Production server
+  - url: http://localhost:8787
+    description: Local development server
+
+tags:
+  - name: Authentication
+    description: User authentication endpoints
+  - name: Units
+    description: Educational units management
+  - name: Lessons
+    description: Lessons within units
+  - name: Exercises
+    description: Practice exercises
+  - name: Progress
+    description: User progress tracking
+  - name: Final Test
+    description: Final test system with stages
+  - name: Certificates
+    description: Certificate management
+  - name: Audio
+    description: Audio file access
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token for user authentication
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        email:
+          type: string
+        is_guest:
+          type: integer
+        preferred_language:
+          type: string
+          enum: [ar, en]
+        created_at:
+          type: string
+          format: date-time
+
+    Unit:
+      type: object
+      properties:
+        id:
+          type: integer
+        title_ar:
+          type: string
+        title_en:
+          type: string
+        description_ar:
+          type: string
+        description_en:
+          type: string
+        icon:
+          type: string
+        order_index:
+          type: integer
+        is_active:
+          type: integer
+
+    Lesson:
+      type: object
+      properties:
+        id:
+          type: integer
+        unit_id:
+          type: integer
+        title_ar:
+          type: string
+        title_en:
+          type: string
+        description_ar:
+          type: string
+        description_en:
+          type: string
+        content_ar:
+          type: string
+        content_en:
+          type: string
+        content_type:
+          type: string
+          enum: [text, interactive, video]
+        interactive_data:
+          type: string
+        audio_urls:
+          type: string
+        order_index:
+          type: integer
+        is_active:
+          type: integer
+
+    Exercise:
+      type: object
+      properties:
+        id:
+          type: integer
+        lesson_id:
+          type: integer
+        question_ar:
+          type: string
+        question_en:
+          type: string
+        exercise_type:
+          type: string
+          enum: [multiple_choice, true_false, find_clock]
+        correct_answer:
+          type: string
+        options_json:
+          type: string
+        explanation_ar:
+          type: string
+        explanation_en:
+          type: string
+        points:
+          type: integer
+        order_index:
+          type: integer
+
+    FinalTest:
+      type: object
+      properties:
+        id:
+          type: integer
+        title_ar:
+          type: string
+        title_en:
+          type: string
+        description_ar:
+          type: string
+        description_en:
+          type: string
+        instructions_ar:
+          type: string
+        instructions_en:
+          type: string
+        passing_score:
+          type: integer
+        is_active:
+          type: integer
+
+    TestStage:
+      type: object
+      properties:
+        id:
+          type: integer
+        final_test_id:
+          type: integer
+        title_ar:
+          type: string
+        title_en:
+          type: string
+        description_ar:
+          type: string
+        description_en:
+          type: string
+        order_index:
+          type: integer
+        passing_score:
+          type: integer
+        time_limit:
+          type: integer
+        is_active:
+          type: integer
+
+    StageQuestion:
+      type: object
+      properties:
+        id:
+          type: integer
+        stage_id:
+          type: integer
+        question_ar:
+          type: string
+        question_en:
+          type: string
+        question_type:
+          type: string
+          enum: [multiple_choice, true_false, find_clock]
+        correct_answer:
+          type: string
+        options_json:
+          type: string
+        explanation_ar:
+          type: string
+        explanation_en:
+          type: string
+        points:
+          type: integer
+        order_index:
+          type: integer
+
+    Certificate:
+      type: object
+      properties:
+        id:
+          type: integer
+        user_id:
+          type: integer
+        final_test_id:
+          type: integer
+        certificate_code:
+          type: string
+        overall_score:
+          type: integer
+        issued_at:
+          type: string
+          format: date-time
+
+    ApiResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+        error:
+          type: string
+
+paths:
+  # ==========================================
+  # AUTHENTICATION
+  # ==========================================
+  /api/auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                email:
+                  type: string
+                password:
+                  type: string
+                preferred_language:
+                  type: string
+                  enum: [ar, en]
+      responses:
+        '200':
+          description: Registration successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Login user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      token:
+                        type: string
+                      user:
+                        $ref: '#/components/schemas/User'
+
+  /api/auth/guest:
+    post:
+      tags:
+        - Authentication
+      summary: Create guest account
+      responses:
+        '200':
+          description: Guest account created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      token:
+                        type: string
+                      user:
+                        $ref: '#/components/schemas/User'
+
+  # ==========================================
+  # UNITS
+  # ==========================================
+  /api/units:
+    get:
+      tags:
+        - Units
+      summary: Get all units
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of units
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Unit'
+
+  /api/units/{id}:
+    get:
+      tags:
+        - Units
+      summary: Get unit by ID
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Unit details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Unit'
+
+  # ==========================================
+  # LESSONS
+  # ==========================================
+  /api/units/{unitId}/lessons:
+    get:
+      tags:
+        - Lessons
+      summary: Get lessons for a unit
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: unitId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of lessons
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Lesson'
+
+  /api/lessons/{id}:
+    get:
+      tags:
+        - Lessons
+      summary: Get lesson by ID
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Lesson details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Lesson'
+
+  /api/lessons/{id}/complete:
+    post:
+      tags:
+        - Lessons
+      summary: Mark lesson as complete
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Lesson marked as complete
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  # ==========================================
+  # EXERCISES
+  # ==========================================
+  /api/lessons/{lessonId}/exercises:
+    get:
+      tags:
+        - Exercises
+      summary: Get exercises for a lesson
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: lessonId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of exercises
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Exercise'
+
+  /api/exercises/{id}/submit:
+    post:
+      tags:
+        - Exercises
+      summary: Submit exercise answer
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - answer
+              properties:
+                answer:
+                  type: string
+      responses:
+        '200':
+          description: Answer submitted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      is_correct:
+                        type: boolean
+                      explanation:
+                        type: string
+
+  # ==========================================
+  # PROGRESS
+  # ==========================================
+  /api/progress:
+    get:
+      tags:
+        - Progress
+      summary: Get user progress
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: User progress
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+
+  # ==========================================
+  # FINAL TEST
+  # ==========================================
+  /api/final-test:
+    get:
+      tags:
+        - Final Test
+      summary: Get final test info
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Final test details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/FinalTest'
+
+  /api/final-test/start:
+    post:
+      tags:
+        - Final Test
+      summary: Start final test
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Test started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/final-test/stages/{stageId}:
+    get:
+      tags:
+        - Final Test
+      summary: Get stage details
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: stageId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Stage details with questions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      stage:
+                        $ref: '#/components/schemas/TestStage'
+                      questions:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/StageQuestion'
+
+  /api/final-test/stages/{stageId}/submit:
+    post:
+      tags:
+        - Final Test
+      summary: Submit stage answers
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: stageId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - answers
+              properties:
+                answers:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      question_id:
+                        type: integer
+                      user_answer:
+                        type: string
+                time_taken:
+                  type: integer
+      responses:
+        '200':
+          description: Stage submitted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      score:
+                        type: integer
+                      passed:
+                        type: boolean
+                      correct_answers:
+                        type: integer
+                      total_questions:
+                        type: integer
+                      next_stage_unlocked:
+                        type: boolean
+                      test_completed:
+                        type: boolean
+                      certificate_earned:
+                        type: boolean
+
+  # ==========================================
+  # CERTIFICATES
+  # ==========================================
+  /api/certificates:
+    get:
+      tags:
+        - Certificates
+      summary: Get user certificates
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of certificates
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Certificate'
+
+  /api/certificates/{code}:
+    get:
+      tags:
+        - Certificates
+      summary: Verify certificate by code
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Certificate details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Certificate'
+
+  # ==========================================
+  # AUDIO FILES
+  # ==========================================
+  /audio/{lang}/{filename}:
+    get:
+      tags:
+        - Audio
+      summary: Get audio file
+      description: Fetch audio files from GitHub repository
+      parameters:
+        - name: lang
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [ar, en]
+        - name: filename
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Audio file
+          content:
+            audio/mpeg:
+              schema:
+                type: string
+                format: binary
